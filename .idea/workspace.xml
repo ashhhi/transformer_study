@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="91a6ba14-c7dd-44bb-b69f-b3f647685d35" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hugging_face/ViT.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hugging_face/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hugging_face/pipline.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mae" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/original_transformer/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/segformer/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/segformer/dataloader.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/segformer/id2label.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/segformer/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/segformer/polygon.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vision_transformer/ViT_Official.pth" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vision_transformer/ViT_Official.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vision_transformer/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vision_transformer/attention.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vision_transformer/cipher10.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vision_transformer/embedding.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vision_transformer/encoder.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vision_transformer/evaluation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vision_transformer/layernorm.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vision_transformer/patch_16_no_pos.pth" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vision_transformer/vision_transformer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/transformer.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/transformer.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/attention.py" beforeDir="false" afterPath="$PROJECT_DIR$/original_transformer/attention.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/decoder.py" beforeDir="false" afterPath="$PROJECT_DIR$/original_transformer/decoder.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/embedding.py" beforeDir="false" afterPath="$PROJECT_DIR$/original_transformer/embedding.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/encoder.py" beforeDir="false" afterPath="$PROJECT_DIR$/original_transformer/encoder.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/layernorm.py" beforeDir="false" afterPath="$PROJECT_DIR$/original_transformer/layernorm.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/transformer.py" beforeDir="false" afterPath="$PROJECT_DIR$/original_transformer/transformer.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 8
+}]]></component>
+  <component name="ProjectId" id="2krvHkxJilvfAgiPRI6j4sAcDnd" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PythonContentEntriesConfigurable"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="91a6ba14-c7dd-44bb-b69f-b3f647685d35" name="Changes" comment="" />
+      <created>1724054424660</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1724054424660</updated>
+    </task>
+    <servers />
+  </component>
+</project>

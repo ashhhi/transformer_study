@@ -1,0 +1,3 @@
+0   leaf
+1   stem
+2   pot
