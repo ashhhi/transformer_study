@@ -20,8 +20,10 @@ from pathlib import Path
 import torch
 import torch.backends.cudnn as cudnn
 from torch.utils.tensorboard import SummaryWriter
+from segmentation_dataset import MySegmentationDataset
 
 import timm
+from torchvision.transforms import v2
 
 # assert timm.__version__ == "0.3.2" # version check
 from timm.models.layers import trunc_normal_
@@ -34,9 +36,10 @@ from util.datasets import build_dataset
 from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
-import models_vit
+import models_vit_add_seg_decoder
 
 from engine_finetune import train_one_epoch, evaluate
+from torch.utils.data import DataLoader
 
 
 def get_args_parser():
@@ -170,8 +173,24 @@ def main(args):
 
     cudnn.benchmark = True
 
-    dataset_train = build_dataset(is_train=True, args=args)
-    dataset_val = build_dataset(is_train=False, args=args)
+    # dataset_train = build_dataset(is_train=True, args=args)
+    # dataset_val = build_dataset(is_train=False, args=args)
+    """
+    load customized segmentation dataset
+    """
+    transforms = v2.Compose([
+        v2.ToImage(),  # Convert to tensor, only needed if you had a PIL image
+        v2.ToDtype(torch.float32),  # optional, most input are already uint8 at this point
+        v2.Resize((args.input_size, args.input_size), antialias=False),
+        # v2.ToDtype(torch.float32, scale=True),  # Normalize expects float input
+        # v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    dataset = MySegmentationDataset(args.data_path, transform=transforms)
+    train_size = int(len(dataset) * 0.7)
+    val_size = int(len(dataset) * 0.2)
+    test_size = len(dataset) - train_size - val_size
+    dataset_train, dataset_val, dataset_test = torch.utils.data.random_split(dataset, [train_size, val_size, test_size])
 
     if True:  # args.distributed:
         num_tasks = misc.get_world_size()
@@ -224,7 +243,8 @@ def main(args):
             prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
             label_smoothing=args.smoothing, num_classes=args.nb_classes)
     
-    model = models_vit.__dict__[args.model](
+    model = models_vit_add_seg_decoder.__dict__[args.model](
+        img_size=args.input_size,
         num_classes=args.nb_classes,
         drop_path_rate=args.drop_path,
         global_pool=args.global_pool,
@@ -248,10 +268,10 @@ def main(args):
         msg = model.load_state_dict(checkpoint_model, strict=False)
         print(msg)
 
-        if args.global_pool:
-            assert set(msg.missing_keys) == {'head.weight', 'head.bias', 'fc_norm.weight', 'fc_norm.bias'}
-        else:
-            assert set(msg.missing_keys) == {'head.weight', 'head.bias'}
+        # if args.global_pool:
+        #     assert set(msg.missing_keys) == {'head.weight', 'head.bias', 'fc_norm.weight', 'fc_norm.bias'}
+        # else:
+        #     assert set(msg.missing_keys) == {'head.weight', 'head.bias'}
 
         # manually initialize fc layer
         trunc_normal_(model.head.weight, std=2e-5)
@@ -323,13 +343,13 @@ def main(args):
                 loss_scaler=loss_scaler, epoch=epoch)
 
         test_stats = evaluate(data_loader_val, model, device)
-        print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
-        max_accuracy = max(max_accuracy, test_stats["acc1"])
-        print(f'Max accuracy: {max_accuracy:.2f}%')
+        # print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
+        # max_accuracy = max(max_accuracy, test_stats["acc1"])
+        # print(f'Max accuracy: {max_accuracy:.2f}%')
 
         if log_writer is not None:
-            log_writer.add_scalar('perf/test_acc1', test_stats['acc1'], epoch)
-            log_writer.add_scalar('perf/test_acc5', test_stats['acc5'], epoch)
+            # log_writer.add_scalar('perf/test_acc1', test_stats['acc1'], epoch)
+            # log_writer.add_scalar('perf/test_acc5', test_stats['acc5'], epoch)
             log_writer.add_scalar('perf/test_loss', test_stats['loss'], epoch)
 
         log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
