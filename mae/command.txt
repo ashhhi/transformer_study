@@ -7,5 +7,4 @@ python /Users/shijunshen/Documents/Code/PycharmProjects/transformer/mae/main_fin
 
 # segmentatition code
 
-python /Users/shijunshen/Documents/Code/PycharmProjects/transformer/mae/main_finetune_add_seg_decoder.py --batch_size=2 --device='mps' -
--data_path='/Users/shijunshen/Documents/Code/dataset/Smart-Farm-All/Roboflow/v8' --finetune='/Users/shijunshen/Documents/Code/PycharmProjects/transformer/mae/output_dir/checkpoint-399.pth' --cls_token --smoothing=0
+python /Users/shijunshen/Documents/Code/PycharmProjects/transformer/mae/main_finetune_add_seg_decoder.py --batch_size=2 --device='mps' --data_path='/Users/shijunshen/Documents/Code/dataset/Smart-Farm-All/Roboflow/v8' --finetune='/Users/shijunshen/Documents/Code/PycharmProjects/transformer/mae/output_dir/checkpoint-399.pth' --cls_token --smoothing=0

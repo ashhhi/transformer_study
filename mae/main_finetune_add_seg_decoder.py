@@ -178,11 +178,24 @@ def main(args):
     """
     load customized segmentation dataset
     """
+    size = (args.input_size, args.input_size)
     transforms = v2.Compose([
         v2.ToImage(),  # Convert to tensor, only needed if you had a PIL image
         v2.ToDtype(torch.float32),  # optional, most input are already uint8 at this point
-        v2.Resize((args.input_size, args.input_size), antialias=False),
-        # v2.ToDtype(torch.float32, scale=True),  # Normalize expects float input
+        # v2.Resize(size, antialias=False),
+        # v2.ScaleJitter((args.input_size, args.input_size), antialias=True)  # Resize
+        v2.RandomResizedCrop(size, antialias=True),
+
+
+        # Augmentation
+        v2.RandomRotation(degrees=(0, 180)),
+        v2.RandomPerspective(distortion_scale=0.6, p=0.2),
+        v2.RandomAutocontrast(),
+        v2.RandomAdjustSharpness(sharpness_factor=2),
+        # v2.ColorJitter(brightness=.5, hue=.3),
+        # v2.RandomInvert(),
+
+        # Normalization
         # v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 

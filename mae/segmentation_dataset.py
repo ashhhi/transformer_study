@@ -18,11 +18,13 @@ class MySegmentationDataset(Dataset):
         self.image_list = []
         self.mask_list = []
         self.n_class = n_class
+
+
         for _, _, filelist in os.walk(image_path):
             for name in filelist:
                 if name.lower().endswith(('.jpg', '.png')):
                     self.image_list.append(os.path.join(image_path, name))
-                    self.mask_list.append(os.path.join(mask_path, name))
+                    self.mask_list.append(os.path.join(mask_path, name.replace('.jpg', '.png')))
 
     def __len__(self):
         return len(self.image_list)
