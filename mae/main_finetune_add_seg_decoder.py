@@ -20,7 +20,7 @@ from pathlib import Path
 import torch
 import torch.backends.cudnn as cudnn
 from torch.utils.tensorboard import SummaryWriter
-from segmentation_dataset import MySegmentationDataset
+from dataset_segmentation import MyDataset
 
 import timm
 from torchvision.transforms import v2
@@ -199,7 +199,7 @@ def main(args):
         # v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
-    dataset = MySegmentationDataset(args.data_path, transform=transforms)
+    dataset = MyDataset(args.data_path, transform=transforms)
     train_size = int(len(dataset) * 0.7)
     val_size = int(len(dataset) * 0.2)
     test_size = len(dataset) - train_size - val_size

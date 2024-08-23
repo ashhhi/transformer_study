@@ -33,6 +33,7 @@ from util.misc import NativeScalerWithGradNormCount as NativeScaler
 import models_mae
 
 from engine_pretrain import train_one_epoch
+from dataset_pretraining import MyDataset
 
 
 def get_args_parser():
@@ -125,8 +126,8 @@ def main(args):
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
-    print(dataset_train)
+
+    dataset_train = MyDataset(args.data_path, transform=transform_train)
 
     if True:  # args.distributed:
         num_tasks = misc.get_world_size()
@@ -151,14 +152,14 @@ def main(args):
         pin_memory=args.pin_mem,
         drop_last=True,
     )
-    
+
     # define the model
     model = models_mae.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
 
     model.to(device)
 
     model_without_ddp = model
-    print("Model = %s" % str(model_without_ddp))
+    # print("Model = %s" % str(model_without_ddp))
 
     eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
     
@@ -180,7 +181,6 @@ def main(args):
     # optimizer = torch.optim.AdamW(param_groups, lr=args.lr, betas=(0.9, 0.95))
     optimizer = torch.optim.AdamW(model_without_ddp.parameters(), lr=args.lr, betas=(0.9, 0.95),
                                   weight_decay=args.weight_decay)
-    print(optimizer)
     loss_scaler = NativeScaler()
 
     misc.load_model(args=args, model_without_ddp=model_without_ddp, optimizer=optimizer, loss_scaler=loss_scaler)

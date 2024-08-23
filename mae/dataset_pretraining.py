@@ -10,39 +10,24 @@ from PIL import Image
 from torchvision.transforms import v2
 from sklearn.preprocessing import OneHotEncoder
 
-class MySegmentationDataset(Dataset):
-    def __init__(self, root_path, transform=None, n_class=3):
-        image_path = os.path.join(root_path, 'img')
-        mask_path = os.path.join(root_path, 'mask')
+class MyDataset(Dataset):
+    def __init__(self, root_path, transform=None):
         self.transform = transform
         self.image_list = []
-        self.mask_list = []
-        self.n_class = n_class
-
-
-        for _, _, filelist in os.walk(image_path):
+        for _, _, filelist in os.walk(root_path):
             for name in filelist:
                 if name.lower().endswith(('.jpg', '.png')):
-                    self.image_list.append(os.path.join(image_path, name))
-                    self.mask_list.append(os.path.join(mask_path, name.replace('.jpg', '.png')))
+                    self.image_list.append(os.path.join(root_path, name))
 
     def __len__(self):
         return len(self.image_list)
 
     def __getitem__(self, idx):
         image_path = self.image_list[idx]
-        mask_path = self.mask_list[idx]
         image = Image.open(image_path)
-        mask = Image.open(mask_path)
         if self.transform:
             image = self.transform(image)
-            mask = self.transform(mask)
-        onehot_mask = np.zeros((self.n_class, mask.shape[1], mask.shape[2]))
-        onehot_mask = torch.tensor(onehot_mask).float()
-        for i in range(self.n_class):
-            onehot_mask[i] = (mask == i).int()
-
-        return image, onehot_mask
+        return image
 
 
 if __name__ == '__main__':
