@@ -9,7 +9,7 @@ from torch import nn
 from PIL import Image
 from torchvision.transforms import v2
 from sklearn.preprocessing import OneHotEncoder
-
+import torch.nn.functional as F
 class MyDataset(Dataset):
     def __init__(self, root_path, transform=None, n_class=3):
         image_path = os.path.join(root_path, 'img')
@@ -34,14 +34,14 @@ class MyDataset(Dataset):
         mask_path = self.mask_list[idx]
         image = Image.open(image_path)
         mask = Image.open(mask_path)
+        image = np.array(image)
+        mask = np.array(mask)
         if self.transform:
-            image = self.transform(image)
-            mask = self.transform(mask)
-        onehot_mask = np.zeros((self.n_class, mask.shape[1], mask.shape[2]))
-        onehot_mask = torch.tensor(onehot_mask).float()
-        for i in range(self.n_class):
-            onehot_mask[i] = (mask == i).int()
-
+            transformed = self.transform(mask=mask, image=image)
+            image = transformed['image']        # (3,224,224)   torch.uint8
+            mask = transformed['mask']          # (224,224)
+        onehot_mask = F.one_hot(mask.type(torch.int64), num_classes=3).permute(2, 0, 1).type(torch.float32)    # (3, 224,224) torch.int64
+        image = image.type(torch.float32)  # convert from torch.uint8 to torch.float32
         return image, onehot_mask
 
 
@@ -54,4 +54,4 @@ if __name__ == '__main__':
         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
-    print(MySegmentationDataset('/Users/shijunshen/Documents/Code/dataset/Segmentation', transforms).__getitem__(2))
+    print(MyDataset('/Users/shijunshen/Documents/Code/dataset/Segmentation', transforms).__getitem__(2))
