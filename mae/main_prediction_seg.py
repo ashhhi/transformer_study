@@ -9,6 +9,7 @@
 # BEiT: https://github.com/microsoft/unilm/tree/master/beit
 # --------------------------------------------------------
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 import argparse
 import datetime
 import json
@@ -112,7 +113,7 @@ def get_args_parser():
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
 
     # * Finetuning params
-    parser.add_argument('--finetune', default='',
+    parser.add_argument('--finetune', default='./output_dir/test.pth',
                         help='finetune from checkpoint')
     parser.add_argument('--global_pool', action='store_true')
     parser.set_defaults(global_pool=False)
@@ -171,6 +172,7 @@ def main(args):
 
     cudnn.benchmark = True
 
+
     # dataset_train = build_dataset(is_train=True, args=args)
     # dataset_val = build_dataset(is_train=False, args=args)
     """
@@ -179,10 +181,7 @@ def main(args):
     # 定义 Albumentations 的增强操作
     transforms = A.Compose([
         A.Resize(224, 224),  # 裁剪
-        # A.Rotate(limit=40, p=0.9),
-        # A.HorizontalFlip(p=0.5),
-        # A.VerticalFlip(p=0.3),
-        # ToTensorV2()
+        ToTensorV2()
     ])
 
     dataset = MyDataset(args.data_path, transform=transforms)
@@ -283,19 +282,43 @@ def main(args):
 
     misc.load_model(args=args, model_without_ddp=model_without_ddp, optimizer=optimizer, loss_scaler=loss_scaler)
 
-    num = 0
+
+    writer = SummaryWriter(log_dir="./output_dir")
+    color_map = {
+        0: [255, 0, 0],  # 红色
+        1: [0, 255, 0],  # 绿色
+        2: [0, 0, 255]  # 蓝色
+    }
+
     model.eval()
-    for data in data_loader:
+    for data in tqdm(data_loader):
         img, mask = data
         img = img.to(device)
         mask = mask.to(device)
         pred = model(img)
-        print(pred.shape, mask.shape)
+        mask = torch.argmax(mask, dim=1)
+        pred = torch.argmax(pred, dim=1)
 
-        # pred = torch.argmax(pred, dim=1)
-        # mask = torch.argmax(mask, dim=1)
+        # 创建一个与当前batch匹配的颜色图像张量
+        pred_rgb_batch = torch.zeros(args.batch_size, 3, 224, 224)
+        mask_rgb_batch = torch.zeros(args.batch_size, 3, 224, 224)
+        for label, color in color_map.items():
+            pred_index = pred == label
+            mask_index = mask == label
+            for i in range(3):
+                pred_rgb_batch[:, i][pred_index] = color[i]
+                mask_rgb_batch[:, i][mask_index] = color[i]
 
-        # print(num_same_elements)
+        # 将当前batch的图像数据添加到整体图像张量中
+        if 'pred_rgb' not in locals():
+            pred_rgb = pred_rgb_batch
+            mask_rgb = mask_rgb_batch
+        else:
+            pred_rgb = torch.cat((pred_rgb, pred_rgb_batch), dim=0)
+            mask_rgb = torch.cat((mask_rgb, mask_rgb_batch), dim=0)
+
+    writer.add_images('Pred Images', pred_rgb, dataformats='NCHW')
+    writer.add_images('Mask Images', mask_rgb, dataformats='NCHW')
     exit(0)
 
 

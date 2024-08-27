@@ -40,6 +40,7 @@ class MyDataset(Dataset):
             transformed = self.transform(mask=mask, image=image)
             image = transformed['image']        # (3,224,224)   torch.uint8
             mask = transformed['mask']          # (224,224)
+        # print(mask.dtype, image.dtype)
         onehot_mask = F.one_hot(mask.type(torch.int64), num_classes=3).permute(2, 0, 1).type(torch.float32)    # (3, 224,224) torch.int64
         image = image.type(torch.float32)  # convert from torch.uint8 to torch.float32
         return image, onehot_mask
