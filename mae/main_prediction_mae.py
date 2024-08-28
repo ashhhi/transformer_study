@@ -13,7 +13,9 @@ import datetime
 import json
 import numpy as np
 import os
+from timm.models.layers import trunc_normal_
 import time
+from util.pos_embed import interpolate_pos_embed
 from pathlib import Path
 from tqdm import tqdm
 import torch
@@ -37,8 +39,9 @@ from dataset_pretraining import MyDataset
 
 
 def get_args_parser():
+
     parser = argparse.ArgumentParser('MAE pre-training', add_help=False)
-    parser.add_argument('--batch_size', default=64, type=int,
+    parser.add_argument('--batch_size', default=2, type=int,
                         help='Batch size per GPU (effective batch size is batch_size * accum_iter * # gpus')
     parser.add_argument('--epochs', default=400, type=int)
     parser.add_argument('--accum_iter', default=1, type=int,
@@ -47,6 +50,8 @@ def get_args_parser():
     # Model parameters
     parser.add_argument('--model', default='mae_vit_large_patch16', type=str, metavar='MODEL',
                         help='Name of model to train')
+    parser.add_argument('--finetune', default='./output_dir/checkpoint-200.pth',
+                        help='finetune from checkpoint')
 
     parser.add_argument('--input_size', default=224, type=int,
                         help='images input size')
@@ -73,14 +78,15 @@ def get_args_parser():
                         help='epochs to warmup LR')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/datasets01/imagenet_full_size/061417/', type=str,
+    parser.add_argument('--data_path',
+                        default='/Users/shijunshen/Documents/Code/dataset/Smart-Farm-All/Final-Dataset/test', type=str,
                         help='dataset path')
 
     parser.add_argument('--output_dir', default='./output_dir',
                         help='path where to save, empty for no saving')
     parser.add_argument('--log_dir', default='./output_dir',
                         help='path where to tensorboard log')
-    parser.add_argument('--device', default='cuda',
+    parser.add_argument('--device', default='mps',
                         help='device to use for training / testing')
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--resume', default='',
@@ -125,7 +131,8 @@ def main(args):
         transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
 
     dataset_train = MyDataset(args.data_path, transform=transform_train)
 
@@ -149,6 +156,24 @@ def main(args):
 
     # define the model
     model = models_mae.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
+
+    if args.finetune:
+        checkpoint = torch.load(args.finetune, map_location='cpu')
+
+        print("Load pre-trained checkpoint from: %s" % args.finetune)
+        checkpoint_model = checkpoint['model']
+        state_dict = model.state_dict()
+        for k in ['head.weight', 'head.bias']:
+            if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
+                print(f"Removing key {k} from pretrained checkpoint")
+                del checkpoint_model[k]
+
+        # interpolate position embedding
+        interpolate_pos_embed(model, checkpoint_model)
+
+        # load pre-trained model
+        msg = model.load_state_dict(checkpoint_model, strict=False)
+        print(msg)
 
     model.to(device)
 
@@ -179,27 +204,47 @@ def main(args):
 
     misc.load_model(args=args, model_without_ddp=model_without_ddp, optimizer=optimizer, loss_scaler=loss_scaler)
 
-
-    # writer = SummaryWriter(log_dir='./output_dir')
+    writer = SummaryWriter(log_dir='./output_dir')
     model.eval()
+    i = 0
     for img in tqdm(data_loader_train):
-        img = img.to(device)
-        _, pred, _ = model(img)
-        pred = model.unpatchify(pred)
-        # 反标准化
-        min_value = torch.min(pred)
-        max_value = torch.max(pred)
-        pred = ((pred - min_value) / (max_value - min_value))
-        print(pred)
-        if 'pred_show' not in locals():
-            pred_show = pred
-        else:
-            pred_show = torch.cat((pred_show, pred), dim=0)
-    # writer.add_images('Pred Images', pred_show, dataformats='NCHW')
+        if i == 0:
+            img = img.to(device)
+            _, pred, mask = model(img)
+            # pred = model.unpatchify(pred)
 
+            patched_img = model.patchify(img)
+            masked_img = patched_img.clone()
+            pred_img = patched_img.clone()
+            zero_mask_index = mask == 0
+            masked_img[zero_mask_index.unsqueeze(2).expand_as(patched_img)] = patched_img[
+                zero_mask_index.unsqueeze(2).expand_as(patched_img)]
+            masked_img[zero_mask_index.unsqueeze(2).expand_as(patched_img)==False] = 0
+            masked_img = model.unpatchify(masked_img)
 
+            pred_img[zero_mask_index.unsqueeze(2).expand_as(patched_img)] = patched_img[
+                zero_mask_index.unsqueeze(2).expand_as(patched_img)]
+            pred_img[zero_mask_index.unsqueeze(2).expand_as(patched_img)==False] = pred[
+                zero_mask_index.unsqueeze(2).expand_as(patched_img)==False]
+            pred_img = model.unpatchify(pred_img)
 
+            res = torch.cat((img, masked_img, pred_img), dim=-2)
 
+            # min_value = torch.min(pred)
+            # max_value = torch.max(pred)
+            # pred = ((pred - min_value) / (max_value - min_value))
+            # print(pred)
+
+            # if 'pred_show' not in locals():
+            #     pred_show = pred
+            #     break
+            # else:
+            #     pred_show = torch.cat((pred_show, pred), dim=0)
+            writer.add_images('MAE pretrain result', res, dataformats='NCHW')
+            # writer.add_images('Masked Images', masked_img, dataformats='NCHW')
+            # writer.add_images('Pred Images', pred_img, dataformats='NCHW')
+            break
+        i += 1
 
 
 if __name__ == '__main__':

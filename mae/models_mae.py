@@ -139,16 +139,17 @@ class MaskedAutoencoderViT(nn.Module):
 
         # keep the first subset
         ids_keep = ids_shuffle[:, :len_keep]
-        x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
+        x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))     # torch.Size([2, 49, 1024])
 
         # generate the binary mask: 0 is keep, 1 is remove
         mask = torch.ones([N, L], device=x.device)
-        mask[:, :len_keep] = 0
+        mask[:, :len_keep] = 0                                  # torch.Size([2, 196])
         # unshuffle to get the binary mask
         mask = torch.gather(mask, dim=1, index=ids_restore)
 
         return x_masked, mask, ids_restore
 
+    # 只对未被masking的patch做encode
     def forward_encoder(self, x, mask_ratio):
         # embed patches
         x = self.patch_embed(x)
@@ -162,22 +163,24 @@ class MaskedAutoencoderViT(nn.Module):
         # append cls token
         cls_token = self.cls_token + self.pos_embed[:, :1, :]
         cls_tokens = cls_token.expand(x.shape[0], -1, -1)
-        x = torch.cat((cls_tokens, x), dim=1)
+        x = torch.cat((cls_tokens, x), dim=1)       # torch.Size([2, 50, 1024])
 
         # apply Transformer blocks
         for blk in self.blocks:
             x = blk(x)
-        x = self.norm(x)
+        x = self.norm(x)                                    # torch.Size([2, 50, 1024])
 
         return x, mask, ids_restore
 
-    def forward_decoder(self, x, ids_restore):
+    def forward_decoder(self, x, ids_restore):          # ids_restore: torch.Size([2, 196])
         # embed tokens
-        x = self.decoder_embed(x)
+        x = self.decoder_embed(x) # torch.Size([2, 50, 512])
 
         # append mask tokens to sequence
-        mask_tokens = self.mask_token.repeat(x.shape[0], ids_restore.shape[1] + 1 - x.shape[1], 1)
+        mask_tokens = self.mask_token.repeat(x.shape[0], ids_restore.shape[1] + 1 - x.shape[1], 1)      # torch.Size([2, 147, 512])
+        # print(mask_tokens.shape, x.shape)
         x_ = torch.cat([x[:, 1:, :], mask_tokens], dim=1)  # no cls token
+        # print(x_.shape)
         x_ = torch.gather(x_, dim=1, index=ids_restore.unsqueeze(-1).repeat(1, 1, x.shape[2]))  # unshuffle
         x = torch.cat([x[:, :1, :], x_], dim=1)  # append cls token
 
@@ -216,7 +219,9 @@ class MaskedAutoencoderViT(nn.Module):
         return loss
 
     def forward(self, imgs, mask_ratio=0.75):
+        # mask: torch.Size([2, 196])
         latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
+        # print('latent', latent.shape, 'mask', mask.shape)
         pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
         loss = self.forward_loss(imgs, pred, mask)
         return loss, pred, mask
