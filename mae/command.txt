@@ -1,14 +1,12 @@
 # original code for classification
 
 python /Users/shijunshen/Documents/Code/PycharmProjects/transformer/mae/main_finetune.py --batch_size=2 --device='mps' --data_path='/Users/shijunshen/Documents/Code/dataset/Smart-Farm-All/MAE_test' --finetune='/Users/shijunshen/Documents/Code/PycharmProjects/transformer/mae/output_dir/checkpoint-399.pth' --nb_classes=2 --cls_token
-
 python main_pretrain.py --data_path='/Users/shijunshen/Documents/Code/dataset/Smart-Farm-All/Final-Dataset/self-supervision' --device='mps' --batch_size=2
 
 
 
 # segmentatition code
-
-
+python /content/transformer_study/mae/main_finetune_segmenter.py --data_path='/content/Final-Dataset' --finetune='/content/output_dir/pretrained-over-20kData-200Epoch.pth' --smoothing=0 --cls_token --batch_size=8 --epoch=200
 
 # Sengital server
 ## pretrain 后台运行
