@@ -6,7 +6,7 @@ python main_pretrain.py --data_path='/Users/shijunshen/Documents/Code/dataset/Sm
 
 
 # segmentatition code
-python /content/transformer_study/mae/main_finetune_segmenter.py --data_path='/content/Final-Dataset' --finetune='/content/output_dir/pretrained-over-20kData-200Epoch.pth' --smoothing=0 --cls_token --batch_size=8 --epoch=200
+python main_finetune_segmenter.py --data_path='/Users/shijunshen/Documents/Code/dataset/Smart-Farm-All/Final-Dataset' --finetune='./output_dir/pretrained-over-20kData-200Epoch.pth' --smoothing=0 --cls_token --batch_size=2 --epoch=200 --device='mps'
 
 # Sengital server
 ## pretrain 后台运行

@@ -25,23 +25,21 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         self.img_size = kwargs['img_size']
         self.patch_size = kwargs['patch_size']
         self.global_pool = global_pool
+        embed_dim = kwargs['embed_dim']
         if self.global_pool:
             norm_layer = kwargs['norm_layer']
-            embed_dim = kwargs['embed_dim']
             self.fc_norm = norm_layer(embed_dim)
             del self.norm  # remove the original norm
         '''
         Add a segmenter decoder
         '''
         # nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.dec_cls = nn.Parameter(torch.zeros(1, 3, kwargs['embed_dim']))
-        self.upsample = nn.Sequential(
-            nn.Upsample(self.img_size // 8),
-            nn.Upsample(self.img_size // 4),
-            nn.Upsample(self.img_size // 2),
-            nn.Upsample(self.img_size)
-        )
+        self.dec_cls = nn.Parameter(torch.zeros(1, 3, embed_dim))
+        self.proj_cls = nn.Parameter(embed_dim * torch.randn(embed_dim, embed_dim))
+        self.proj_patch = nn.Parameter(embed_dim * torch.randn(embed_dim, embed_dim))
 
+        self.d_norm = nn.LayerNorm(embed_dim)
+        self.mask_norm = nn.LayerNorm(3)
 
     def forward(self, x):
         B, C, H, W = x.shape
@@ -54,24 +52,34 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         x = self.pos_drop(x)
         for blk in self.blocks:
             x = blk(x)
-        if self.global_pool:
-            x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
-            outcome = self.fc_norm(x)
-        else:
-            x = self.norm(x)
-            # outcome = x[:, 0]
-            x = x[:, 1:, :]
-            # 定义连续的反卷积层
-            dec_cls = self.dec_cls.expand(B, 3, -1)
-            x = torch.cat((dec_cls, x), dim=1)
-            for blk in self.blocks:
-                x = blk(x)
-            x = torch.bmm(x[:, 3:, :], torch.transpose(x[:, :3, :], 1, 2))  # Batch, n_Token, n_Class
-            x = x.reshape((-1, C, H//self.patch_size, W//self.patch_size))
-            x = self.upsample(x)
-            outcome = F.softmax(x, dim=1)
-            # print('forward里的output形状：', x.shape)
-        return outcome
+
+        x = self.norm(x)
+        # outcome = x[:, 0]
+        x = x[:, 1:, :]
+        dec_cls = self.dec_cls.expand(B, 3, -1)
+        x = torch.cat((dec_cls, x), dim=1)
+        for blk in self.blocks:
+            x = blk(x)
+        x = self.d_norm(x)
+
+        cls, patches = x[:, 3:, :], x[:, :3, :]
+
+        # L2 Normalization
+        # cls = cls @ self.proj_cls
+        # print(cls)
+        # patches = patches @ self.proj_patch
+
+        cls = cls / cls.norm(dim=-1, keepdim=True)
+        patches = patches / patches.norm(dim=-1, keepdim=True)
+        x = cls @ torch.transpose(patches, 1, 2)
+
+        x = self.mask_norm(x)
+        x = x.reshape((-1, C, H // self.patch_size, W // self.patch_size))
+        x = F.interpolate(x, size=(H, W), mode="bilinear")
+        x = F.softmax(x, dim=1)
+        print(x)
+        # print('forward里的output形状：', x.shape)
+        return x
 
 
 def vit_base_patch16(**kwargs):

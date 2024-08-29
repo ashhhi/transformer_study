@@ -37,7 +37,7 @@ from util.datasets import build_dataset
 from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
-import models_segmentor
+import models_new
 
 from engine_finetune import train_one_epoch, evaluate
 from torch.utils.data import DataLoader
@@ -245,11 +245,12 @@ def main(args):
             prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
             label_smoothing=args.smoothing, num_classes=args.nb_classes)
     
-    model = models_segmentor.__dict__[args.model](
+    model = models_segmentor(
         img_size=args.input_size,
         num_classes=args.nb_classes,
         drop_path_rate=args.drop_path,
         global_pool=args.global_pool,
+        model=args.model
     )
 
     if args.finetune and not args.eval:
